@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { runningTotals } from "../scoring";
+import { stateToShareUrl } from "../hooks/useGameState";
 import type { GameState } from "../types";
 
 interface ScoreHeaderProps {
@@ -7,7 +9,16 @@ interface ScoreHeaderProps {
 }
 
 export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
+  const [copied, setCopied] = useState(false);
   const totals = runningTotals(state.rounds);
+
+  function handleShare(): void {
+    const url = stateToShareUrl(state);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => undefined);
+  }
   const { scoreLimit, players, phase, rounds } = state;
 
   const roundDisplay =
@@ -71,13 +82,22 @@ export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
 
       <div className="flex items-center justify-between mt-4">
         <p className="text-sm text-zinc-500">{roundDisplay}</p>
-        <button
-          type="button"
-          onClick={onNewGame}
-          className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
-        >
-          New Game
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+          >
+            {copied ? "Copied!" : "Share"}
+          </button>
+          <button
+            type="button"
+            onClick={onNewGame}
+            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+          >
+            New Game
+          </button>
+        </div>
       </div>
     </div>
   );

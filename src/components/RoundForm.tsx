@@ -3,7 +3,9 @@ import type { PlayerEntry, PlayerIndex } from "../types";
 
 interface RoundFormProps {
   players: [string, string, string, string];
+  roundsPlayed: number;
   onSubmit: (entries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry]) => void;
+  onUndo: () => void;
 }
 
 type FieldKey = "called" | "obtained";
@@ -21,7 +23,7 @@ const emptyFields = (): FormFields => ({
   3: { called: "", obtained: "" },
 });
 
-export function RoundForm({ players, onSubmit }: RoundFormProps) {
+export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundFormProps) {
   const [fields, setFields] = useState<FormFields>(emptyFields);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,14 +116,25 @@ export function RoundForm({ players, onSubmit }: RoundFormProps) {
         <p className={`text-xs ${roundsColorClass}`}>
           Rounds: {obtainedSum} / 13
         </p>
-        <button
-          type="button"
-          disabled={!allFilled}
-          onClick={handleSubmit}
-          className="bg-white text-zinc-950 font-semibold px-6 py-2 rounded-lg hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Add Round
-        </button>
+        <div className="flex items-center gap-2">
+          {roundsPlayed > 0 && (
+            <button
+              type="button"
+              onClick={onUndo}
+              className="text-xs px-3 py-2 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+            >
+              Undo
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!allFilled}
+            onClick={handleSubmit}
+            className="bg-white text-zinc-950 font-semibold px-6 py-2 rounded-lg hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Add Round
+          </button>
+        </div>
       </div>
     </div>
   );

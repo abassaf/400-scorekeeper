@@ -39,7 +39,9 @@ export default function App() {
         {state.phase === "playing" && (
           <RoundForm
             players={state.players}
+            roundsPlayed={state.rounds.length}
             onSubmit={(entries) => dispatch({ type: "ADD_ROUND", entries })}
+            onUndo={() => dispatch({ type: "UNDO_ROUND" })}
           />
         )}
 

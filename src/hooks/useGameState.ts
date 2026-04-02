@@ -9,6 +9,7 @@ import { calcRound, runningTotals } from "../scoring";
 export type GameAction =
   | { type: "START_GAME"; players: [string, string, string, string]; scoreLimit: number }
   | { type: "ADD_ROUND"; entries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry] }
+  | { type: "UNDO_ROUND" }
   | { type: "NEW_GAME" }
   | { type: "KEEP_PLAYING" };
 
@@ -98,6 +99,28 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "UNDO_ROUND": {
+      if (state.rounds.length === 0) return state;
+      const newRounds = state.rounds.slice(0, -1);
+      const totals = runningTotals(newRounds);
+      const aReached = totals.a >= state.scoreLimit;
+      const bReached = totals.b >= state.scoreLimit;
+      let winner: "A" | "B" | null = null;
+      if (aReached && bReached) {
+        winner = totals.a >= totals.b ? "A" : "B";
+      } else if (aReached) {
+        winner = "A";
+      } else if (bReached) {
+        winner = "B";
+      }
+      return {
+        ...state,
+        rounds: newRounds,
+        winner,
+        phase: winner !== null ? "finished" : "playing",
+      };
+    }
+
     case "NEW_GAME": {
       return { ...initialState };
     }
@@ -119,26 +142,51 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 // ---------------------------------------------------------------------------
-// localStorage helpers
+// localStorage + URL helpers
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = "400-scorekeeper-state";
 
+function isValidState(parsed: unknown): parsed is GameState {
+  return (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "phase" in parsed &&
+    "players" in parsed &&
+    "rounds" in parsed
+  );
+}
+
+function loadFromUrl(): GameState | null {
+  try {
+    const hash = window.location.hash;
+    const match = hash.match(/[#&]state=([^&]*)/);
+    if (!match) return null;
+    const decoded = JSON.parse(atob(decodeURIComponent(match[1])));
+    if (isValidState(decoded)) {
+      // Clear the hash so it doesn't persist or re-hydrate on refresh.
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      return decoded;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function stateToShareUrl(state: GameState): string {
+  const encoded = encodeURIComponent(btoa(JSON.stringify(state)));
+  return `${window.location.origin}${window.location.pathname}#state=${encoded}`;
+}
+
 function loadState(): GameState {
+  const fromUrl = loadFromUrl();
+  if (fromUrl !== null) return fromUrl;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return initialState;
     const parsed: unknown = JSON.parse(raw);
-    // A basic shape check so we never hydrate with stale or corrupt data.
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      "phase" in parsed &&
-      "players" in parsed &&
-      "rounds" in parsed
-    ) {
-      return parsed as GameState;
-    }
+    if (isValidState(parsed)) return parsed;
     return initialState;
   } catch {
     return initialState;
