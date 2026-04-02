@@ -38,7 +38,11 @@ export function Setup({ onStart }: SetupProps) {
     onStart(resolved, scoreLimit);
   }
 
+  const [scoreLimitRaw, setScoreLimitRaw] = useState<string>(String(scoreLimit));
+  const scoreLimitInvalid = parseInt(scoreLimitRaw, 10) < 40 || isNaN(parseInt(scoreLimitRaw, 10));
+
   function handleScoreLimit(value: string): void {
+    setScoreLimitRaw(value);
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       setScoreLimit(parsed);
@@ -107,22 +111,24 @@ export function Setup({ onStart }: SetupProps) {
         <div className="mb-2">
           <label className="block text-sm text-zinc-400 mb-1">Score Limit</label>
           <input
-            type="number"
-            className={`${inputClass} w-32`}
-            min="40"
-            max="500"
-            value={scoreLimit}
+            type="text"
+            inputMode="numeric"
+            className={`${inputClass} w-32 ${scoreLimitInvalid ? "border-red-500 focus:border-red-500" : ""}`}
+            value={scoreLimitRaw}
             onChange={(e) => handleScoreLimit(e.target.value)}
           />
-          <p className="text-xs text-zinc-500 mt-1">
-            First team to reach this score wins
-          </p>
+          {scoreLimitInvalid ? (
+            <p className="text-xs text-red-400 mt-1">Must be 40 or higher</p>
+          ) : (
+            <p className="text-xs text-zinc-500 mt-1">First team to reach this score wins</p>
+          )}
         </div>
 
         <button
           type="button"
           onClick={handleStart}
-          className="w-full mt-6 py-3 rounded-xl bg-white text-zinc-950 font-semibold hover:bg-zinc-100 transition-colors"
+          disabled={scoreLimitInvalid}
+          className="w-full mt-6 py-3 rounded-xl bg-white text-zinc-950 font-semibold hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Start Game
         </button>

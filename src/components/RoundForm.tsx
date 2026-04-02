@@ -45,7 +45,7 @@ export function RoundForm({ players, onSubmit }: RoundFormProps) {
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
 
-  const tricksColorClass =
+  const roundsColorClass =
     obtainedSum === 13
       ? "text-green-400"
       : obtainedSum > 13
@@ -111,8 +111,8 @@ export function RoundForm({ players, onSubmit }: RoundFormProps) {
       </div>
 
       <div className="flex items-center justify-between mt-4">
-        <p className={`text-xs ${tricksColorClass}`}>
-          Tricks: {obtainedSum} / 13
+        <p className={`text-xs ${roundsColorClass}`}>
+          Rounds: {obtainedSum} / 13
         </p>
         <button
           type="button"
