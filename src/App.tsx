@@ -1,13 +1,18 @@
+import { useRef } from "react";
 import { useGameState } from "./hooks/useGameState";
+import { useExport } from "./hooks/useExport";
 import { Setup } from "./components/Setup";
 import { ScoreHeader } from "./components/ScoreHeader";
 import { RoundForm } from "./components/RoundForm";
 import { RoundHistory } from "./components/RoundHistory";
 import { PlayerStats } from "./components/PlayerStats";
 import { WinnerBanner } from "./components/WinnerBanner";
+import { ExportCard } from "./components/ExportCard";
 
 export default function App() {
   const { state, dispatch } = useGameState();
+  const exportCardRef = useRef<HTMLDivElement>(null);
+  const { exportImage, exporting } = useExport(exportCardRef);
 
   if (state.phase === "setup") {
     return (
@@ -25,6 +30,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
+      {/* Off-screen export card — must be in DOM for html-to-image */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, zIndex: -1, pointerEvents: "none" }}>
+        <ExportCard ref={exportCardRef} state={state} />
+      </div>
+
       <div className="max-w-3xl mx-auto px-4 py-10">
         {state.phase === "finished" && (
           <WinnerBanner
@@ -34,7 +44,12 @@ export default function App() {
           />
         )}
 
-        <ScoreHeader state={state} onNewGame={() => dispatch({ type: "NEW_GAME" })} />
+        <ScoreHeader
+          state={state}
+          onNewGame={() => dispatch({ type: "NEW_GAME" })}
+          onExport={exportImage}
+          exporting={exporting}
+        />
 
         {state.phase === "playing" && (
           <RoundForm

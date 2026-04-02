@@ -6,9 +6,11 @@ import type { GameState } from "../types";
 interface ScoreHeaderProps {
   state: GameState;
   onNewGame: () => void;
+  onExport: () => void;
+  exporting: boolean;
 }
 
-export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
+export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHeaderProps) {
   const [copied, setCopied] = useState(false);
   const totals = runningTotals(state.rounds);
 
@@ -89,6 +91,14 @@ export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
             className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
           >
             {copied ? "Copied!" : "Share"}
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={exporting}
+            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {exporting ? "Saving…" : "Export"}
           </button>
           <button
             type="button"
