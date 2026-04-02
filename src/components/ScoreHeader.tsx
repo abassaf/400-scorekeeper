@@ -74,7 +74,7 @@ export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
         <button
           type="button"
           onClick={onNewGame}
-          className="text-xs text-zinc-500 hover:text-white transition-colors"
+          className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
         >
           New Game
         </button>
