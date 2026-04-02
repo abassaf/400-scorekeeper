@@ -3,9 +3,10 @@ import type { GameState } from "../types";
 
 interface ScoreHeaderProps {
   state: GameState;
+  onNewGame: () => void;
 }
 
-export function ScoreHeader({ state }: ScoreHeaderProps) {
+export function ScoreHeader({ state, onNewGame }: ScoreHeaderProps) {
   const totals = runningTotals(state.rounds);
   const { scoreLimit, players, phase, rounds } = state;
 
@@ -68,7 +69,16 @@ export function ScoreHeader({ state }: ScoreHeaderProps) {
         </div>
       </div>
 
-      <p className="text-center text-sm text-zinc-500 mt-4">{roundDisplay}</p>
+      <div className="flex items-center justify-between mt-4">
+        <p className="text-sm text-zinc-500">{roundDisplay}</p>
+        <button
+          type="button"
+          onClick={onNewGame}
+          className="text-xs text-zinc-500 hover:text-white transition-colors"
+        >
+          New Game
+        </button>
+      </div>
     </div>
   );
 }

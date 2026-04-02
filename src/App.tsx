@@ -34,7 +34,7 @@ export default function App() {
           />
         )}
 
-        <ScoreHeader state={state} />
+        <ScoreHeader state={state} onNewGame={() => dispatch({ type: "NEW_GAME" })} />
 
         {state.phase === "playing" && (
           <RoundForm
