@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { runningTotals } from "../scoring";
+import { runningTotals, playerCumulativeScore } from "../scoring";
 import { stateToShareUrl } from "../hooks/useGameState";
 import type { GameState } from "../types";
 
@@ -23,6 +23,13 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHead
   }
   const { scoreLimit, players, phase, rounds } = state;
 
+  const aBlocked =
+    totals.a >= scoreLimit &&
+    ([0, 1] as const).some((i) => playerCumulativeScore(rounds, i) < 0);
+  const bBlocked =
+    totals.b >= scoreLimit &&
+    ([2, 3] as const).some((i) => playerCumulativeScore(rounds, i) < 0);
+
   const roundDisplay =
     phase === "playing"
       ? `Round ${rounds.length + 1}`
@@ -39,9 +46,16 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHead
       <div className="grid grid-cols-2 gap-4">
         {/* Team A */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-            Team A
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              Team A
+            </p>
+            {aBlocked && (
+              <span className="text-xs font-semibold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">
+                Blocked
+              </span>
+            )}
+          </div>
           <p className="text-sm text-zinc-400 mt-0.5">
             {players[0]} &amp; {players[1]}
           </p>
@@ -61,9 +75,16 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHead
 
         {/* Team B */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-            Team B
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              Team B
+            </p>
+            {bBlocked && (
+              <span className="text-xs font-semibold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">
+                Blocked
+              </span>
+            )}
+          </div>
           <p className="text-sm text-zinc-400 mt-0.5">
             {players[2]} &amp; {players[3]}
           </p>

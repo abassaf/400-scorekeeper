@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import type { GameState, PlayerIndex } from "../types";
-import { runningTotals, playerStats } from "../scoring";
+import { runningTotals, playerStats, playerCumulativeScore } from "../scoring";
 
 interface ExportCardProps {
   state: GameState;
@@ -133,15 +133,20 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
           <div className="grid grid-cols-4 gap-2">
             {PLAYER_INDICES.map((i) => {
               const s = stats[i];
+              const score = playerCumulativeScore(rounds, i);
               const makeRateColor =
                 s.makeRate >= 0.7 ? "#34d399" : s.makeRate >= 0.5 ? "#facc15" : "#f87171";
+              const scoreColor = score >= 0 ? "#34d399" : "#f87171";
               return (
                 <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
                   <p style={{ fontSize: "11px", fontWeight: 600, color: "#ffffff", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {players[i]}
                   </p>
-                  <p style={{ fontSize: "10px", color: "#52525b", marginBottom: "6px" }}>
+                  <p style={{ fontSize: "10px", color: "#52525b", marginBottom: "4px" }}>
                     {i < 2 ? "Team A" : "Team B"}
+                  </p>
+                  <p style={{ fontSize: "12px", color: scoreColor, fontWeight: 700, marginBottom: "2px" }}>
+                    {score >= 0 ? "+" : ""}{score} pts
                   </p>
                   <p style={{ fontSize: "11px", color: makeRateColor, fontWeight: 600 }}>
                     {Math.round(s.makeRate * 100)}%

@@ -32,6 +32,13 @@ export function runningTotals(rounds: Round[]): { a: number; b: number } {
   return { a, b };
 }
 
+export function playerCumulativeScore(rounds: Round[], playerIndex: PlayerIndex): number {
+  return rounds.reduce((sum, r) => {
+    const e = r.entries[playerIndex];
+    return sum + playerScore(e.called, e.obtained);
+  }, 0);
+}
+
 export function playerStats(
   rounds: Round[],
   playerIndex: PlayerIndex,

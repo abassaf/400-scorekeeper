@@ -1,6 +1,6 @@
 import { useReducer, useEffect } from "react";
-import type { GameState, PlayerEntry } from "../types";
-import { calcRound, runningTotals } from "../scoring";
+import type { GameState, PlayerEntry, PlayerIndex } from "../types";
+import { calcRound, runningTotals, playerScore } from "../scoring";
 
 // ---------------------------------------------------------------------------
 // Action types
@@ -38,6 +38,24 @@ function clampEntry(entry: PlayerEntry): PlayerEntry {
     called: clamp(entry.called, 1, 13),
     obtained: clamp(entry.obtained, 0, 13),
   };
+}
+
+// A team can only win if their total reaches the scoreLimit AND every player
+// on the team has a non-negative cumulative individual score.
+function canWin(
+  total: number,
+  scoreLimit: number,
+  rounds: { entries: { called: number; obtained: number }[] }[],
+  playerIndices: PlayerIndex[],
+): boolean {
+  if (total < scoreLimit) return false;
+  return playerIndices.every((i) => {
+    const cumScore = rounds.reduce((sum, r) => {
+      const e = r.entries[i];
+      return sum + playerScore(e.called, e.obtained);
+    }, 0);
+    return cumScore >= 0;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -78,16 +96,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const totals = runningTotals(newRounds);
       const { scoreLimit } = state;
 
-      const aReached = totals.a >= scoreLimit;
-      const bReached = totals.b >= scoreLimit;
+      const aCanWin = canWin(totals.a, scoreLimit, newRounds, [0, 1]);
+      const bCanWin = canWin(totals.b, scoreLimit, newRounds, [2, 3]);
 
       let winner: "A" | "B" | null = null;
 
-      if (aReached && bReached) {
+      if (aCanWin && bCanWin) {
         winner = totals.a >= totals.b ? "A" : "B";
-      } else if (aReached) {
+      } else if (aCanWin) {
         winner = "A";
-      } else if (bReached) {
+      } else if (bCanWin) {
         winner = "B";
       }
 
@@ -103,14 +121,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.rounds.length === 0) return state;
       const newRounds = state.rounds.slice(0, -1);
       const totals = runningTotals(newRounds);
-      const aReached = totals.a >= state.scoreLimit;
-      const bReached = totals.b >= state.scoreLimit;
+      const aCanWin = canWin(totals.a, state.scoreLimit, newRounds, [0, 1]);
+      const bCanWin = canWin(totals.b, state.scoreLimit, newRounds, [2, 3]);
       let winner: "A" | "B" | null = null;
-      if (aReached && bReached) {
+      if (aCanWin && bCanWin) {
         winner = totals.a >= totals.b ? "A" : "B";
-      } else if (aReached) {
+      } else if (aCanWin) {
         winner = "A";
-      } else if (bReached) {
+      } else if (bCanWin) {
         winner = "B";
       }
       return {

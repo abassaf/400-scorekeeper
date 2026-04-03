@@ -1,5 +1,5 @@
 import { GameState, PlayerIndex } from "../types";
-import { playerStats, runningTotals } from "../scoring";
+import { playerStats, runningTotals, playerCumulativeScore } from "../scoring";
 
 interface PlayerStatsProps {
   state: GameState;
@@ -25,6 +25,7 @@ export function PlayerStats({ state }: PlayerStatsProps) {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {PLAYER_INDICES.map((idx) => {
           const stats = playerStats(rounds, idx);
+          const score = playerCumulativeScore(rounds, idx);
           const teamLabel = idx < 2 ? "Team A" : "Team B";
           return (
             <div key={idx} className="bg-zinc-800/50 rounded-lg p-3">
@@ -32,6 +33,12 @@ export function PlayerStats({ state }: PlayerStatsProps) {
                 {players[idx]}
               </p>
               <p className="text-xs text-zinc-500 mb-2">{teamLabel}</p>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-zinc-500">Score</span>
+                <span className={`text-xs font-semibold ${score >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {score >= 0 ? "+" : ""}{score}
+                </span>
+              </div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs text-zinc-500">Make Rate</span>
                 <span
