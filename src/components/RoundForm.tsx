@@ -32,9 +32,17 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
     key: FieldKey,
     value: string
   ): void => {
+    let clamped = value;
+    if (value !== "") {
+      const num = parseInt(value, 10);
+      if (!isNaN(num)) {
+        const min = key === "called" ? 2 : 0;
+        clamped = String(Math.min(Math.max(num, min), 13));
+      }
+    }
     setFields((prev) => ({
       ...prev,
-      [index]: { ...prev[index], [key]: value },
+      [index]: { ...prev[index], [key]: clamped },
     }));
   };
 
