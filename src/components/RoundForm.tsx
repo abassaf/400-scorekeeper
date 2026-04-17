@@ -17,10 +17,10 @@ type FormFields = {
 const PLAYER_INDICES: PlayerIndex[] = [0, 1, 2, 3];
 
 const emptyFields = (): FormFields => ({
-  0: { called: "", obtained: "" },
-  1: { called: "", obtained: "" },
-  2: { called: "", obtained: "" },
-  3: { called: "", obtained: "" },
+  0: { called: "2", obtained: "" },
+  1: { called: "2", obtained: "" },
+  2: { called: "2", obtained: "" },
+  3: { called: "2", obtained: "" },
 });
 
 export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundFormProps) {
@@ -42,12 +42,21 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
     (i) => fields[i].called !== "" && fields[i].obtained !== ""
   );
 
+  const calledSum = PLAYER_INDICES.reduce<number>((sum, i) => {
+    const val = parseInt(fields[i].called, 10);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+
   const obtainedSum = PLAYER_INDICES.reduce<number>((sum, i) => {
     const val = parseInt(fields[i].obtained, 10);
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
 
-  const roundsColorClass =
+  const canSubmit = allFilled && calledSum >= 11 && obtainedSum <= 13;
+
+  const bidsColorClass = calledSum >= 11 ? "text-green-400" : "text-zinc-500";
+
+  const obtainedColorClass =
     obtainedSum === 13
       ? "text-green-400"
       : obtainedSum > 13
@@ -55,7 +64,7 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
       : "text-zinc-500";
 
   const handleSubmit = (): void => {
-    if (!allFilled) return;
+    if (!canSubmit) return;
 
     const entries = PLAYER_INDICES.map((i) => ({
       called: parseInt(fields[i].called, 10),
@@ -90,7 +99,7 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
                 ref={isFirstPlayer ? firstInputRef : undefined}
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={2}
                 max={13}
                 value={fields[i].called}
                 onChange={(e) => handleChange(i, "called", e.target.value)}
@@ -113,9 +122,14 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
       </div>
 
       <div className="flex items-center justify-between mt-4">
-        <p className={`text-xs ${roundsColorClass}`}>
-          Rounds: {obtainedSum} / 13
-        </p>
+        <div className="flex items-center gap-3">
+          <p className={`text-xs ${bidsColorClass}`}>
+            Bids: {calledSum} (min 11){calledSum >= 11 ? " ✓" : ""}
+          </p>
+          <p className={`text-xs ${obtainedColorClass}`}>
+            Obtained: {obtainedSum} / 13
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {roundsPlayed > 0 && (
             <button
@@ -128,7 +142,7 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
           )}
           <button
             type="button"
-            disabled={!allFilled}
+            disabled={!canSubmit}
             onClick={handleSubmit}
             className="bg-white text-zinc-950 font-semibold px-6 py-2 rounded-lg hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
