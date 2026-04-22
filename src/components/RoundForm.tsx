@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { PlayerEntry, PlayerIndex } from "../types";
+import { NumberStepper } from "./NumberStepper";
 
 interface RoundFormProps {
   players: [string, string, string, string];
@@ -8,133 +9,89 @@ interface RoundFormProps {
   onUndo: () => void;
 }
 
-type FieldKey = "called" | "obtained";
-
-type FormFields = {
-  [K in PlayerIndex]: { called: string; obtained: string };
-};
+type FormFields = { [K in PlayerIndex]: PlayerEntry };
 
 const PLAYER_INDICES: PlayerIndex[] = [0, 1, 2, 3];
 
 const emptyFields = (): FormFields => ({
-  0: { called: "2", obtained: "" },
-  1: { called: "2", obtained: "" },
-  2: { called: "2", obtained: "" },
-  3: { called: "2", obtained: "" },
+  0: { called: 2, obtained: 0 },
+  1: { called: 2, obtained: 0 },
+  2: { called: 2, obtained: 0 },
+  3: { called: 2, obtained: 0 },
 });
 
 export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundFormProps) {
   const [fields, setFields] = useState<FormFields>(emptyFields);
-  const firstInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (
-    index: PlayerIndex,
-    key: FieldKey,
-    value: string
-  ): void => {
-    let clamped = value;
-    if (value !== "") {
-      const num = parseInt(value, 10);
-      if (!isNaN(num)) {
-        const min = key === "called" ? 2 : 0;
-        clamped = String(Math.min(Math.max(num, min), 13));
-      }
-    }
-    setFields((prev) => ({
-      ...prev,
-      [index]: { ...prev[index], [key]: clamped },
-    }));
-  };
+  function update(index: PlayerIndex, key: keyof PlayerEntry, value: number) {
+    setFields((prev) => ({ ...prev, [index]: { ...prev[index], [key]: value } }));
+  }
 
-  const allFilled = PLAYER_INDICES.every(
-    (i) => fields[i].called !== "" && fields[i].obtained !== ""
-  );
+  const calledSum = PLAYER_INDICES.reduce((s, i) => s + fields[i].called, 0);
+  const obtainedSum = PLAYER_INDICES.reduce((s, i) => s + fields[i].obtained, 0);
+  const canSubmit = calledSum >= 11 && obtainedSum <= 13;
 
-  const calledSum = PLAYER_INDICES.reduce<number>((sum, i) => {
-    const val = parseInt(fields[i].called, 10);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
+  const bidsColor = calledSum >= 11 ? 'var(--sp-positive)' : 'var(--sp-text-muted)';
+  const obtainedColor = obtainedSum > 13 ? 'var(--sp-danger)' : obtainedSum === 13 ? 'var(--sp-positive)' : 'var(--sp-text-muted)';
 
-  const obtainedSum = PLAYER_INDICES.reduce<number>((sum, i) => {
-    const val = parseInt(fields[i].obtained, 10);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
-
-  const canSubmit = allFilled && calledSum >= 11 && obtainedSum <= 13;
-
-  const bidsColorClass = calledSum >= 11 ? "text-green-400" : "text-zinc-500";
-
-  const obtainedColorClass =
-    obtainedSum === 13
-      ? "text-green-400"
-      : obtainedSum > 13
-      ? "text-yellow-400"
-      : "text-zinc-500";
-
-  const handleSubmit = (): void => {
+  function handleSubmit() {
     if (!canSubmit) return;
-
-    const entries = PLAYER_INDICES.map((i) => ({
-      called: parseInt(fields[i].called, 10),
-      obtained: parseInt(fields[i].obtained, 10),
-    })) as [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry];
-
-    onSubmit(entries);
+    onSubmit(PLAYER_INDICES.map((i) => ({ ...fields[i] })) as [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry]);
     setFields(emptyFields());
-    firstInputRef.current?.focus();
-  };
+  }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">
+    <div
+      className="rounded-xl p-6 mb-6"
+      style={{ backgroundColor: 'var(--sp-card)', border: '1px solid var(--sp-border)' }}
+    >
+      <p className="text-xs font-semibold uppercase tracking-widest mb-4"
+        style={{ color: 'var(--sp-text-subtle)' }}>
         Round Entry
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {PLAYER_INDICES.map((i) => {
-          const isFirstPlayer = i === 0;
-          const teamLabel = i < 2 ? "Team A" : "Team B";
-
-          return (
-            <div key={i}>
-              <p className="text-xs text-zinc-400 font-medium mb-0.5 truncate">
-                {players[i]}
-              </p>
-              <p className="text-xs text-zinc-600">{teamLabel}</p>
-
-              <p className="text-xs text-zinc-500 mb-1 mt-2">Called</p>
-              <input
-                ref={isFirstPlayer ? firstInputRef : undefined}
-                type="number"
-                inputMode="numeric"
-                min={2}
-                max={13}
-                value={fields[i].called}
-                onChange={(e) => handleChange(i, "called", e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-center text-sm focus:outline-none focus:border-zinc-500"
-              />
-
-              <p className="text-xs text-zinc-500 mb-1 mt-2">Obtained</p>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={13}
-                value={fields[i].obtained}
-                onChange={(e) => handleChange(i, "obtained", e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-white text-center text-sm focus:outline-none focus:border-zinc-500"
-              />
+      <div className="grid grid-cols-2 gap-4">
+        {([{ label: 'Team A', indices: [0, 1] as const, solid: 'var(--sp-team-a-solid)', text: 'var(--sp-team-a-text)' },
+           { label: 'Team B', indices: [2, 3] as const, solid: 'var(--sp-team-b-solid)', text: 'var(--sp-team-b-text)' }] as const).map((team) => (
+          <div key={team.label}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-center mb-3" style={{ color: team.text }}>
+              {team.label}
+            </p>
+            <div className="space-y-3">
+              {team.indices.map((i) => (
+                <div key={i} className="rounded-lg p-3" style={{ backgroundColor: 'var(--sp-bg)', borderLeft: `3px solid ${team.solid}` }}>
+                  <p className="text-xs font-medium truncate mb-3" style={{ color: 'var(--sp-text-primary)' }}>
+                    {players[i]}
+                  </p>
+                  <div className="space-y-3">
+                    <NumberStepper
+                      value={fields[i].called}
+                      min={2}
+                      max={13}
+                      onChange={(v) => update(i, 'called', v)}
+                      label="Bid"
+                    />
+                    <NumberStepper
+                      value={fields[i].obtained}
+                      min={0}
+                      max={13}
+                      onChange={(v) => update(i, 'obtained', v)}
+                      label="Obtained"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center justify-between mt-4">
         <div className="flex items-center gap-3">
-          <p className={`text-xs ${bidsColorClass}`}>
-            Bids: {calledSum} (min 11){calledSum >= 11 ? " ✓" : ""}
+          <p className="text-xs" style={{ color: bidsColor }}>
+            Bids: {calledSum}{calledSum >= 11 ? ' ✓' : ' (min 11)'}
           </p>
-          <p className={`text-xs ${obtainedColorClass}`}>
+          <p className="text-xs" style={{ color: obtainedColor }}>
             Obtained: {obtainedSum} / 13
           </p>
         </div>
@@ -143,7 +100,8 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
             <button
               type="button"
               onClick={onUndo}
-              className="text-xs px-3 py-2 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+              className="text-xs px-3 py-2 rounded-lg transition-colors"
+              style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-text-secondary)' }}
             >
               Undo
             </button>
@@ -152,7 +110,8 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
             type="button"
             disabled={!canSubmit}
             onClick={handleSubmit}
-            className="bg-white text-zinc-950 font-semibold px-6 py-2 rounded-lg hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="text-sm font-semibold px-6 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            style={{ backgroundColor: 'var(--sp-accent)', color: 'var(--sp-accent-text)' }}
           >
             Add Round
           </button>

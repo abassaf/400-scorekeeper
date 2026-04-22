@@ -19,10 +19,22 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting, onSave, sav
 
   function handleShare(): void {
     const url = stateToShareUrl(state);
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => undefined);
+    const finish = () => { setCopied(true); setTimeout(() => setCopied(false), 2000); };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(finish).catch(() => fallbackCopy(url, finish));
+    } else {
+      fallbackCopy(url, finish);
+    }
+  }
+
+  function fallbackCopy(text: string, onSuccess: () => void): void {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    if (document.execCommand('copy')) onSuccess();
+    document.body.removeChild(ta);
   }
 
   const aBlocked =

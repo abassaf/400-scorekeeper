@@ -50,8 +50,8 @@ export function EditRoundModal({ open, round, players, onSave, onClose }: EditRo
   const validationText = calledSum < 11
     ? `Bids too low: ${calledSum} (min 11)`
     : obtainedSum > 13
-    ? `Tricks too high: ${obtainedSum} (max 13)`
-    : `Bids: ${calledSum} · Tricks: ${obtainedSum}`;
+    ? `Obtained too high: ${obtainedSum} (max 13)`
+    : `Bids: ${calledSum} · Obtained: ${obtainedSum}`;
 
   function handleSave() {
     if (!round || !canSubmit) return;
@@ -90,7 +90,7 @@ export function EditRoundModal({ open, round, players, onSave, onClose }: EditRo
                       min={0}
                       max={13}
                       onChange={(v) => updateEntry(i, 'obtained', v)}
-                      label="Tricks"
+                      label="Obtained"
                     />
                   </div>
                 </div>
