@@ -9,49 +9,54 @@ interface WinnerBannerProps {
 }
 
 export function WinnerBanner({ state, onNewGame, onKeepPlaying }: WinnerBannerProps) {
-  if (state.phase !== "finished" || state.winner === null) {
-    return null;
-  }
+  if (state.phase !== "finished" || state.winner === null) return null;
 
   const totals = runningTotals(state.rounds);
   const winner = state.winner;
-
-  // Team A: players[0] & players[1], Team B: players[2] & players[3]
   const teamANames = `${state.players[0]} & ${state.players[1]}`;
   const teamBNames = `${state.players[2]} & ${state.players[3]}`;
-
   const winningTeamLabel = winner === "A" ? "Team A" : "Team B";
   const winningTeamNames = winner === "A" ? teamANames : teamBNames;
 
-  const teamAScoreClass = winner === "A" ? "text-emerald-400 font-bold" : "text-zinc-500";
-  const teamBScoreClass = winner === "B" ? "text-emerald-400 font-bold" : "text-zinc-500";
+  const winnerSolid = winner === "A" ? 'var(--sp-team-a-solid)' : 'var(--sp-team-b-solid)';
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 border-t-2 border-t-emerald-500 rounded-xl p-6 mb-6">
-      <Trophy className="text-emerald-400 w-8 h-8 mb-3" />
-
-      <h2 className="text-2xl font-bold text-white">{winningTeamLabel} Wins!</h2>
-
-      <p className="text-zinc-400 mt-1">{winningTeamNames}</p>
-
+    <div
+      className="rounded-xl p-6 mb-6"
+      style={{
+        backgroundColor: 'var(--sp-card)',
+        border: '1px solid var(--sp-border)',
+        borderTop: `2px solid ${winnerSolid}`,
+      }}
+    >
+      <Trophy style={{ color: winnerSolid, width: 32, height: 32, marginBottom: 12 }} />
+      <h2 className="text-2xl font-bold" style={{ color: 'var(--sp-text-primary)' }}>
+        {winningTeamLabel} Wins!
+      </h2>
+      <p className="mt-1" style={{ color: 'var(--sp-text-secondary)' }}>{winningTeamNames}</p>
       <p className="mt-3 text-sm">
-        <span className={teamAScoreClass}>Team A: {totals.a} pts</span>
-        <span className="text-zinc-600 mx-2">·</span>
-        <span className={teamBScoreClass}>Team B: {totals.b} pts</span>
+        <span style={{ color: winner === 'A' ? 'var(--sp-team-a-solid)' : 'var(--sp-text-muted)', fontWeight: winner === 'A' ? 700 : 400 }}>
+          Team A: {totals.a} pts
+        </span>
+        <span className="mx-2" style={{ color: 'var(--sp-text-muted)' }}>·</span>
+        <span style={{ color: winner === 'B' ? 'var(--sp-team-b-solid)' : 'var(--sp-text-muted)', fontWeight: winner === 'B' ? 700 : 400 }}>
+          Team B: {totals.b} pts
+        </span>
       </p>
-
       <div className="flex gap-3 mt-6">
         <button
           type="button"
           onClick={onNewGame}
-          className="flex-1 py-2 rounded-xl bg-white text-zinc-950 font-semibold hover:bg-zinc-100 transition-colors"
+          className="flex-1 py-2 rounded-xl font-semibold transition-colors"
+          style={{ backgroundColor: 'var(--sp-accent)', color: 'var(--sp-accent-text)' }}
         >
           New Game
         </button>
         <button
           type="button"
           onClick={onKeepPlaying}
-          className="flex-1 py-2 rounded-xl bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+          className="flex-1 py-2 rounded-xl transition-colors"
+          style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-text-primary)' }}
         >
           Keep Playing
         </button>
