@@ -166,12 +166,12 @@ export function stateToShareUrl(state: GameState): string {
 
 function loadState(): GameState {
   try {
-    const hash = window.location.hash;
-    const match = hash.match(/[#?&]state=([^&]*)/);
+    const searchAndHash = window.location.search + window.location.hash;
+    const match = searchAndHash.match(/[#?&]state=([^&#]*)/);
     if (match) {
       const decoded: unknown = JSON.parse(atob(decodeURIComponent(match[1])));
       if (isValidState(decoded)) {
-        history.replaceState(null, "", window.location.pathname + window.location.search);
+        history.replaceState(null, "", window.location.pathname);
         return decoded;
       }
     }

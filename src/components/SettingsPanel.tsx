@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme, type ThemeMode } from '../context/ThemeContext';
 import { isValidState } from '../hooks/useGameState';
 import type { GameAction } from '../hooks/useGameState';
@@ -13,6 +13,13 @@ export function SettingsPanel({ dispatch }: SettingsPanelProps) {
   const [linkText, setLinkText] = useState('');
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   const modes: { value: ThemeMode; label: string }[] = [
     { value: 'light', label: 'Light' },
@@ -24,7 +31,7 @@ export function SettingsPanel({ dispatch }: SettingsPanelProps) {
     setImportError('');
     setImportSuccess(false);
     try {
-      const match = linkText.match(/[#?&]state=([^&]*)/);
+      const match = linkText.match(/[#?&]state=([^&#]*)/);
       if (!match) {
         setImportError('Invalid link — no state parameter found');
         return;
@@ -37,7 +44,7 @@ export function SettingsPanel({ dispatch }: SettingsPanelProps) {
       dispatch?.({ type: 'LOAD_STATE', state: decoded });
       setLinkText('');
       setImportSuccess(true);
-      setTimeout(() => setImportSuccess(false), 2000);
+      successTimerRef.current = setTimeout(() => setImportSuccess(false), 2000);
     } catch {
       setImportError('Invalid link — could not decode');
     }
