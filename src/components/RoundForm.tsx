@@ -27,8 +27,8 @@ export function RoundForm({ players, roundsPlayed, onSubmit, onUndo }: RoundForm
     setFields((prev) => ({ ...prev, [index]: { ...prev[index], [key]: value } }));
   }
 
-  const calledSum = PLAYER_INDICES.reduce((s, i) => s + fields[i].called, 0);
-  const obtainedSum = PLAYER_INDICES.reduce((s, i) => s + fields[i].obtained, 0);
+  const calledSum = PLAYER_INDICES.reduce<number>((s, i) => s + fields[i].called, 0);
+  const obtainedSum = PLAYER_INDICES.reduce<number>((s, i) => s + fields[i].obtained, 0);
   const canSubmit = calledSum >= 11 && obtainedSum <= 13;
 
   const bidsColor = calledSum >= 11 ? 'var(--sp-positive)' : 'var(--sp-text-muted)';
