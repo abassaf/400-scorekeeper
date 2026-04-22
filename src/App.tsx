@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useGameState } from "./hooks/useGameState";
 import { useExport } from "./hooks/useExport";
 import { useTheme } from "./context/ThemeContext";
@@ -10,12 +10,14 @@ import { PlayerStats } from "./components/PlayerStats";
 import { WinnerBanner } from "./components/WinnerBanner";
 import { ExportCard } from "./components/ExportCard";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { Dialog } from "./components/Dialog";
 
 export default function App() {
   const { state, dispatch } = useGameState();
   const { colors } = useTheme();
   const exportCardRef = useRef<HTMLDivElement>(null);
   const { exportImage, exporting } = useExport(exportCardRef);
+  const [showNewGamePrompt, setShowNewGamePrompt] = useState(false);
 
   const cssVars = {
     '--sp-bg': colors.bg,
@@ -43,6 +45,14 @@ export default function App() {
     '--sp-team-b-text': colors.teamB.text,
   } as React.CSSProperties;
 
+  function handleNewGame() {
+    if (state.phase === 'playing' && state.rounds.length > 0) {
+      setShowNewGamePrompt(true);
+    } else {
+      dispatch({ type: 'NEW_GAME' });
+    }
+  }
+
   if (state.phase === "setup") {
     return (
       <div
@@ -65,25 +75,24 @@ export default function App() {
       className="min-h-screen"
       style={{ ...cssVars, backgroundColor: colors.bg, color: colors.textPrimary }}
     >
-      {/* Off-screen export card */}
       <div style={{ position: "fixed", left: "-9999px", top: 0, zIndex: -1, pointerEvents: "none" }}>
         <ExportCard ref={exportCardRef} state={state} />
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <SettingsPanel />
+        <SettingsPanel dispatch={dispatch} />
 
         {state.phase === "finished" && (
           <WinnerBanner
             state={state}
-            onNewGame={() => dispatch({ type: "NEW_GAME" })}
+            onNewGame={handleNewGame}
             onKeepPlaying={() => dispatch({ type: "KEEP_PLAYING" })}
           />
         )}
 
         <ScoreHeader
           state={state}
-          onNewGame={() => dispatch({ type: "NEW_GAME" })}
+          onNewGame={handleNewGame}
           onExport={exportImage}
           exporting={exporting}
         />
@@ -99,11 +108,39 @@ export default function App() {
 
         {state.rounds.length > 0 && (
           <>
-            <RoundHistory state={state} />
+            <RoundHistory state={state} dispatch={dispatch} />
             <PlayerStats state={state} />
           </>
         )}
       </div>
+
+      <Dialog
+        open={showNewGamePrompt}
+        onClose={() => setShowNewGamePrompt(false)}
+        title="New Game"
+      >
+        <p className="text-sm mb-5" style={{ color: 'var(--sp-text-secondary)' }}>
+          You have an in-progress game. Discard it and start fresh?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => { dispatch({ type: 'NEW_GAME' }); setShowNewGamePrompt(false); }}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ backgroundColor: 'var(--sp-danger)', color: '#ffffff' }}
+          >
+            Discard &amp; New Game
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNewGamePrompt(false)}
+            className="w-full py-2.5 rounded-xl text-sm transition-colors"
+            style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-text-secondary)' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </Dialog>
     </div>
   );
 }
