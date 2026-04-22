@@ -8,9 +8,11 @@ interface ScoreHeaderProps {
   onNewGame: () => void;
   onExport: () => void;
   exporting: boolean;
+  onSave?: () => void;
+  saveLabel?: string;
 }
 
-export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHeaderProps) {
+export function ScoreHeader({ state, onNewGame, onExport, exporting, onSave, saveLabel = 'Save' }: ScoreHeaderProps) {
   const [copied, setCopied] = useState(false);
   const totals = runningTotals(state.rounds);
   const { scoreLimit, players, phase, rounds } = state;
@@ -118,6 +120,16 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting }: ScoreHead
       <div className="flex items-center justify-between mt-4">
         <p className="text-sm" style={{ color: 'var(--sp-text-subtle)' }}>{roundDisplay}</p>
         <div className="flex items-center gap-2">
+          {onSave && state.phase === 'playing' && state.rounds.length > 0 && (
+            <button
+              type="button"
+              onClick={onSave}
+              className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-team-a-text)' }}
+            >
+              {saveLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={handleShare}
