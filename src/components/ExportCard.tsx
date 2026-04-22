@@ -53,7 +53,8 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             return (
               <div
                 key={team}
-                className={`bg-zinc-900 rounded-xl p-4 border ${winner ? "border-emerald-500" : "border-zinc-800"}`}
+                className="bg-zinc-900 rounded-xl p-4 border"
+                style={{ borderColor: winner ? (team === 'A' ? '#3b82f6' : '#f59e0b') : '#27272a' }}
               >
                 <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
                   Team {team} {winner && "🏆"}
@@ -62,8 +63,8 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                 <p className="text-4xl font-bold text-white mt-2">{total}</p>
                 <div className="mt-3 h-1.5 rounded-full bg-zinc-800">
                   <div
-                    className="h-1.5 rounded-full bg-emerald-500"
-                    style={{ width: clampedPct(total) }}
+                    className="h-1.5 rounded-full"
+                    style={{ width: clampedPct(total), backgroundColor: team === 'A' ? '#3b82f6' : '#f59e0b' }}
                   />
                 </div>
                 <p className="text-xs text-zinc-600 text-right mt-1">/ {scoreLimit}</p>
