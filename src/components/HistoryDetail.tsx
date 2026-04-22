@@ -10,14 +10,16 @@ import { useExport } from '../hooks/useExport';
 interface HistoryDetailProps {
   entry: HistoryEntry;
   onBack: () => void;
+  onLoadIntoGame: () => void;
 }
 
-export function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
+export function HistoryDetail({ entry, onBack, onLoadIntoGame }: HistoryDetailProps) {
   const exportCardRef = useRef<HTMLDivElement>(null);
   const { exportImage, exporting } = useExport(exportCardRef);
 
+  const isUnfinished = entry.winner === null;
   const displayState: GameState = {
-    phase: 'finished',
+    phase: isUnfinished ? 'playing' : 'finished',
     players: entry.players,
     scoreLimit: entry.scoreLimit,
     rounds: entry.rounds,
@@ -30,14 +32,24 @@ export function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
         <ExportCard ref={exportCardRef} state={displayState} />
       </div>
 
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-sm mb-4 flex items-center gap-1 transition-colors"
-        style={{ color: 'var(--sp-text-muted)' }}
-      >
-        ← Back
-      </button>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm flex items-center gap-1 transition-colors"
+          style={{ color: 'var(--sp-text-muted)' }}
+        >
+          ← Back
+        </button>
+        <button
+          type="button"
+          onClick={onLoadIntoGame}
+          className="text-sm px-4 py-1.5 rounded-lg font-semibold transition-colors"
+          style={{ backgroundColor: 'var(--sp-accent)', color: 'var(--sp-accent-text)' }}
+        >
+          {isUnfinished ? 'Continue Game' : 'Load into Game'}
+        </button>
+      </div>
 
       <ScoreHeader
         state={displayState}

@@ -25,6 +25,7 @@ export default function App() {
   const [showNewGamePrompt, setShowNewGamePrompt] = useState(false);
   const [view, setView] = useState<AppView>('game');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
+  const [pendingLoadEntry, setPendingLoadEntry] = useState<HistoryEntry | null>(null);
 
   const savedIdRef = useRef<string | null>(null);
   const wasSavedRef = useRef(false);
@@ -74,6 +75,26 @@ export default function App() {
     setShowNewGamePrompt(false);
   }
 
+  function doLoad(entry: HistoryEntry) {
+    dispatch({ type: 'LOAD_STATE', state: {
+      phase: entry.winner === null ? 'playing' : 'finished',
+      players: entry.players,
+      scoreLimit: entry.scoreLimit,
+      rounds: entry.rounds,
+      winner: entry.winner,
+    }});
+    setSelectedEntry(null);
+    setView('game');
+  }
+
+  function handleLoadIntoGame(entry: HistoryEntry) {
+    if (state.phase === 'playing' && state.rounds.length > 0) {
+      setPendingLoadEntry(entry);
+    } else {
+      doLoad(entry);
+    }
+  }
+
   const cssVars = {
     '--sp-bg': colors.bg,
     '--sp-card': colors.card,
@@ -100,31 +121,16 @@ export default function App() {
     '--sp-team-b-text': colors.teamB.text,
   } as React.CSSProperties;
 
-  if (state.phase === "setup") {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ ...cssVars, backgroundColor: colors.bg, color: colors.textPrimary }}
-      >
-        <div className="w-full max-w-lg">
-          <Setup
-            onStart={(players, scoreLimit) =>
-              dispatch({ type: "START_GAME", players, scoreLimit })
-            }
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className="min-h-screen"
       style={{ ...cssVars, backgroundColor: colors.bg, color: colors.textPrimary }}
     >
-      <div style={{ position: "fixed", left: "-9999px", top: 0, zIndex: -1, pointerEvents: "none" }}>
-        <ExportCard ref={exportCardRef} state={state} />
-      </div>
+      {state.phase !== "setup" && (
+        <div style={{ position: "fixed", left: "-9999px", top: 0, zIndex: -1, pointerEvents: "none" }}>
+          <ExportCard ref={exportCardRef} state={state} />
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
         <SettingsPanel dispatch={dispatch} />
@@ -139,6 +145,7 @@ export default function App() {
           <HistoryDetail
             entry={selectedEntry}
             onBack={() => setSelectedEntry(null)}
+            onLoadIntoGame={() => handleLoadIntoGame(selectedEntry)}
           />
         )}
 
@@ -151,7 +158,19 @@ export default function App() {
           />
         )}
 
-        {view === 'game' && (
+        {view === 'game' && state.phase === "setup" && (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-full max-w-lg">
+              <Setup
+                onStart={(players, scoreLimit) =>
+                  dispatch({ type: "START_GAME", players, scoreLimit })
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {view === 'game' && state.phase !== "setup" && (
           <>
             {state.phase === "finished" && (
               <WinnerBanner
@@ -217,6 +236,41 @@ export default function App() {
           <button
             type="button"
             onClick={() => setShowNewGamePrompt(false)}
+            className="w-full py-2.5 rounded-xl text-sm transition-colors"
+            style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-text-secondary)' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </Dialog>
+      <Dialog
+        open={pendingLoadEntry !== null}
+        onClose={() => setPendingLoadEntry(null)}
+        title="Load Game"
+      >
+        <p className="text-sm mb-5" style={{ color: 'var(--sp-text-secondary)' }}>
+          You have an in-progress game. What would you like to do?
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => { saveGame(state); doLoad(pendingLoadEntry!); setPendingLoadEntry(null); }}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ backgroundColor: 'var(--sp-accent)', color: 'var(--sp-accent-text)' }}
+          >
+            Save &amp; Continue
+          </button>
+          <button
+            type="button"
+            onClick={() => { doLoad(pendingLoadEntry!); setPendingLoadEntry(null); }}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ backgroundColor: 'var(--sp-danger)', color: '#ffffff' }}
+          >
+            Discard &amp; Continue
+          </button>
+          <button
+            type="button"
+            onClick={() => setPendingLoadEntry(null)}
             className="w-full py-2.5 rounded-xl text-sm transition-colors"
             style={{ backgroundColor: 'var(--sp-border)', color: 'var(--sp-text-secondary)' }}
           >

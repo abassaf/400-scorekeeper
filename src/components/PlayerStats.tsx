@@ -1,11 +1,9 @@
-import { GameState, PlayerIndex } from "../types";
+import { GameState } from "../types";
 import { playerStats, runningTotals, playerCumulativeScore } from "../scoring";
 
 interface PlayerStatsProps {
   state: GameState;
 }
-
-const PLAYER_INDICES: PlayerIndex[] = [0, 1, 2, 3];
 
 export function PlayerStats({ state }: PlayerStatsProps) {
   const { rounds, players } = state;
@@ -26,50 +24,53 @@ export function PlayerStats({ state }: PlayerStatsProps) {
         style={{ color: 'var(--sp-text-subtle)' }}>
         Player Stats
       </p>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {PLAYER_INDICES.map((idx) => {
-          const s = playerStats(rounds, idx);
-          const score = playerCumulativeScore(rounds, idx);
-          const teamLabel = idx < 2 ? "Team A" : "Team B";
-          const teamSolid = idx < 2 ? 'var(--sp-team-a-solid)' : 'var(--sp-team-b-solid)';
-          return (
-            <div
-              key={idx}
-              className="rounded-lg p-3"
-              style={{ backgroundColor: 'var(--sp-border)', borderLeft: `3px solid ${teamSolid}` }}
-            >
-              <p className="text-sm font-medium truncate" style={{ color: 'var(--sp-text-primary)' }}>
-                {players[idx]}
-              </p>
-              <p className="text-xs mb-2" style={{ color: 'var(--sp-text-subtle)' }}>{teamLabel}</p>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Score</span>
-                <span className="text-xs font-semibold"
-                  style={{ color: score >= 0 ? 'var(--sp-positive)' : 'var(--sp-danger)' }}>
-                  {score >= 0 ? "+" : ""}{score}
-                </span>
-              </div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Make Rate</span>
-                <span className="text-xs font-medium" style={{ color: makeRateColor(s.makeRate) }}>
-                  {Math.round(s.makeRate * 100)}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Avg Called</span>
-                <span className="text-xs font-medium" style={{ color: 'var(--sp-text-secondary)' }}>
-                  {s.avgCalled.toFixed(1)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Avg Obtained</span>
-                <span className="text-xs font-medium" style={{ color: 'var(--sp-text-secondary)' }}>
-                  {s.avgObtained.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-4">
+        {([{ label: 'Team A', indices: [0, 1] as const, solid: 'var(--sp-team-a-solid)' },
+           { label: 'Team B', indices: [2, 3] as const, solid: 'var(--sp-team-b-solid)' }] as const).map((team) => (
+          <div key={team.label} className="space-y-3">
+            {team.indices.map((idx) => {
+              const s = playerStats(rounds, idx);
+              const score = playerCumulativeScore(rounds, idx);
+              return (
+                <div
+                  key={idx}
+                  className="rounded-lg p-3"
+                  style={{ backgroundColor: 'var(--sp-border)', borderLeft: `3px solid ${team.solid}` }}
+                >
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--sp-text-primary)' }}>
+                    {players[idx]}
+                  </p>
+                  <p className="text-xs mb-2" style={{ color: 'var(--sp-text-subtle)' }}>{team.label}</p>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Score</span>
+                    <span className="text-xs font-semibold"
+                      style={{ color: score >= 0 ? 'var(--sp-positive)' : 'var(--sp-danger)' }}>
+                      {score >= 0 ? "+" : ""}{score}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Make Rate</span>
+                    <span className="text-xs font-medium" style={{ color: makeRateColor(s.makeRate) }}>
+                      {Math.round(s.makeRate * 100)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Avg Called</span>
+                    <span className="text-xs font-medium" style={{ color: 'var(--sp-text-secondary)' }}>
+                      {s.avgCalled.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: 'var(--sp-text-muted)' }}>Avg Obtained</span>
+                    <span className="text-xs font-medium" style={{ color: 'var(--sp-text-secondary)' }}>
+                      {s.avgObtained.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
       <div className="flex justify-between mt-4 pt-4" style={{ borderTop: '1px solid var(--sp-border)' }}>
         <span className="text-sm" style={{ color: 'var(--sp-text-secondary)' }}>
