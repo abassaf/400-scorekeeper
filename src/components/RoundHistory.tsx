@@ -1,28 +1,27 @@
+import { useState } from "react";
 import type { GameState, Round } from "../types";
+import type { GameAction } from "../hooks/useGameState";
+import { EditRoundModal } from "./EditRoundModal";
 
 interface RoundHistoryProps {
   state: GameState;
+  dispatch?: React.Dispatch<GameAction>;
 }
 
 function scoreColor(score: number): string {
-  if (score > 0) return "text-emerald-400";
-  if (score < 0) return "text-red-400";
-  return "text-zinc-400";
+  if (score > 0) return 'var(--sp-positive)';
+  if (score < 0) return 'var(--sp-danger)';
+  return 'var(--sp-text-secondary)';
 }
 
 function formatDelta(score: number): string {
-  if (score > 0) return `+${score}`;
-  return `${score}`;
+  return score > 0 ? `+${score}` : `${score}`;
 }
 
-function dotColor(entry: { called: number; obtained: number }): string {
-  return entry.obtained >= entry.called ? "text-emerald-400" : "text-red-400";
-}
-
-export function RoundHistory({ state }: RoundHistoryProps) {
+export function RoundHistory({ state, dispatch }: RoundHistoryProps) {
   const { rounds, players } = state;
+  const [editingRound, setEditingRound] = useState<Round | null>(null);
 
-  // Pre-compute running totals in forward order, indexed by round index (0-based)
   const cumulatives: { aTotal: number; bTotal: number }[] = [];
   let runningA = 0;
   let runningB = 0;
@@ -32,92 +31,110 @@ export function RoundHistory({ state }: RoundHistoryProps) {
     cumulatives.push({ aTotal: runningA, bTotal: runningB });
   }
 
-  // Build display rows: each round paired with its cumulative totals
-  const rows: { round: Round; aTotal: number; bTotal: number }[] = rounds.map(
-    (round, idx) => ({
-      round,
-      aTotal: cumulatives[idx].aTotal,
-      bTotal: cumulatives[idx].bTotal,
-    })
-  );
+  const displayRows = rounds
+    .map((round, idx) => ({ round, aTotal: cumulatives[idx].aTotal, bTotal: cumulatives[idx].bTotal }))
+    .reverse();
 
-  // Reverse so newest round appears first
-  const displayRows = [...rows].reverse();
+  if (rounds.length === 0) return null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">
-        Round History
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <th className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-left pr-3">
-                #
-              </th>
-              {players.map((name, i) => (
-                <th
-                  key={i}
-                  className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-right px-2"
-                >
-                  {name}
+    <>
+      <div
+        className="rounded-xl p-6 mb-6"
+        style={{ backgroundColor: 'var(--sp-card)', border: '1px solid var(--sp-border)' }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest mb-4"
+          style={{ color: 'var(--sp-text-subtle)' }}>
+          Round History
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="text-xs uppercase pb-2 text-left pr-3"
+                  style={{ color: 'var(--sp-text-subtle)', borderBottom: '1px solid var(--sp-border)' }}>
+                  #
                 </th>
-              ))}
-              <th className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-right px-2">
-                Team A &Delta;
-              </th>
-              <th className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-right px-2">
-                Team B &Delta;
-              </th>
-              <th className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-right px-2">
-                Team A &Sigma;
-              </th>
-              <th className="text-xs text-zinc-500 uppercase pb-2 border-b border-zinc-800 text-right pl-2">
-                Team B &Sigma;
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayRows.map(({ round, aTotal, bTotal }, rowIdx) => {
-              const isEven = rowIdx % 2 === 0;
-              const rowBg = isEven ? "bg-zinc-900" : "bg-zinc-800/30";
-              return (
-                <tr
-                  key={round.id}
-                  className={`${rowBg} border-b border-zinc-800/50`}
-                >
-                  <td className="text-zinc-500 text-left pr-3 py-2">
-                    {round.id}
-                  </td>
-                  {round.entries.map((entry, i) => (
-                    <td key={i} className="text-right px-2 py-2 text-zinc-300">
-                      <span className={dotColor(entry)}>&#9679;</span>{" "}
-                      {entry.called}&rarr;{entry.obtained}
+                {players.map((name, i) => (
+                  <th key={i} className="text-xs uppercase pb-2 text-right px-2"
+                    style={{ color: 'var(--sp-text-subtle)', borderBottom: '1px solid var(--sp-border)' }}>
+                    {name}
+                  </th>
+                ))}
+                {['Team A Δ', 'Team B Δ', 'Team A Σ', 'Team B Σ'].map((h) => (
+                  <th key={h} className="text-xs uppercase pb-2 text-right px-2"
+                    style={{ color: 'var(--sp-text-subtle)', borderBottom: '1px solid var(--sp-border)' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map(({ round, aTotal, bTotal }, rowIdx) => {
+                const isEven = rowIdx % 2 === 0;
+                const clickable = !!dispatch;
+                return (
+                  <tr
+                    key={round.id}
+                    onClick={clickable ? () => setEditingRound(round) : undefined}
+                    style={{
+                      backgroundColor: isEven ? 'transparent' : 'var(--sp-table-row-alt)',
+                      cursor: clickable ? 'pointer' : 'default',
+                      borderBottom: '1px solid var(--sp-border)',
+                    }}
+                    className={clickable ? 'hover:opacity-80 transition-opacity' : ''}
+                  >
+                    <td className="text-left pr-3 py-2" style={{ color: 'var(--sp-text-muted)' }}>
+                      <span className="flex items-center gap-1">
+                        {round.comment && (
+                          <span
+                            title={round.comment}
+                            style={{ color: 'var(--sp-positive)', fontSize: 8 }}
+                          >●</span>
+                        )}
+                        {round.id}
+                      </span>
                     </td>
-                  ))}
-                  <td
-                    className={`text-right px-2 py-2 ${scoreColor(round.teamAScore)}`}
-                  >
-                    {formatDelta(round.teamAScore)}
-                  </td>
-                  <td
-                    className={`text-right px-2 py-2 ${scoreColor(round.teamBScore)}`}
-                  >
-                    {formatDelta(round.teamBScore)}
-                  </td>
-                  <td className="text-white font-semibold text-right px-2 py-2">
-                    {aTotal}
-                  </td>
-                  <td className="text-white font-semibold text-right pl-2 py-2">
-                    {bTotal}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    {round.entries.map((entry, i) => (
+                      <td key={i} className="text-right px-2 py-2"
+                        style={{ color: entry.obtained >= entry.called ? 'var(--sp-positive)' : 'var(--sp-danger)' }}>
+                        <span>&#9679;</span> {entry.called}&rarr;{entry.obtained}
+                      </td>
+                    ))}
+                    <td className="text-right px-2 py-2" style={{ color: scoreColor(round.teamAScore) }}>
+                      {formatDelta(round.teamAScore)}
+                    </td>
+                    <td className="text-right px-2 py-2" style={{ color: scoreColor(round.teamBScore) }}>
+                      {formatDelta(round.teamBScore)}
+                    </td>
+                    <td className="text-right px-2 py-2 font-semibold"
+                      style={{ color: 'var(--sp-text-primary)' }}>
+                      {aTotal}
+                    </td>
+                    <td className="text-right pl-2 py-2 font-semibold"
+                      style={{ color: 'var(--sp-text-primary)' }}>
+                      {bTotal}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      {dispatch && (
+        <EditRoundModal
+          open={editingRound !== null}
+          round={editingRound}
+          players={state.players}
+          onSave={(roundId, entries, comment) => {
+            dispatch({ type: 'EDIT_ROUND', roundId, entries, comment: comment || undefined });
+            setEditingRound(null);
+          }}
+          onClose={() => setEditingRound(null)}
+        />
+      )}
+    </>
   );
 }
