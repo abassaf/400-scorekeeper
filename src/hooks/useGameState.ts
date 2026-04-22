@@ -1,21 +1,15 @@
 import { useReducer, useEffect } from "react";
-import type { GameState, PlayerEntry, PlayerIndex } from "../types";
+import type { GameState, PlayerEntry, PlayerIndex, Round } from "../types";
 import { calcRound, runningTotals, playerScore } from "../scoring";
-
-// ---------------------------------------------------------------------------
-// Action types
-// ---------------------------------------------------------------------------
 
 export type GameAction =
   | { type: "START_GAME"; players: [string, string, string, string]; scoreLimit: number }
   | { type: "ADD_ROUND"; entries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry] }
   | { type: "UNDO_ROUND" }
   | { type: "NEW_GAME" }
-  | { type: "KEEP_PLAYING" };
-
-// ---------------------------------------------------------------------------
-// Initial state
-// ---------------------------------------------------------------------------
+  | { type: "KEEP_PLAYING" }
+  | { type: "LOAD_STATE"; state: GameState }
+  | { type: "EDIT_ROUND"; roundId: number; entries: Round["entries"]; comment?: string };
 
 const initialState: GameState = {
   phase: "setup",
@@ -24,10 +18,6 @@ const initialState: GameState = {
   rounds: [],
   winner: null,
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -40,8 +30,6 @@ function clampEntry(entry: PlayerEntry): PlayerEntry {
   };
 }
 
-// A team can only win if their total reaches the scoreLimit AND every player
-// on the team has a non-negative cumulative individual score.
 function canWin(
   total: number,
   scoreLimit: number,
@@ -58,9 +46,23 @@ function canWin(
   });
 }
 
-// ---------------------------------------------------------------------------
-// Reducer
-// ---------------------------------------------------------------------------
+function resolveWinner(
+  rounds: Round[],
+  scoreLimit: number,
+): { winner: "A" | "B" | null; phase: GameState["phase"] } {
+  const totals = runningTotals(rounds);
+  const aCanWin = canWin(totals.a, scoreLimit, rounds, [0, 1]);
+  const bCanWin = canWin(totals.b, scoreLimit, rounds, [2, 3]);
+  let winner: "A" | "B" | null = null;
+  if (aCanWin && bCanWin) {
+    winner = totals.a >= totals.b ? "A" : "B";
+  } else if (aCanWin) {
+    winner = "A";
+  } else if (bCanWin) {
+    winner = "B";
+  }
+  return { winner, phase: winner !== null ? "finished" : "playing" };
+}
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -82,114 +84,79 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         clampEntry(action.entries[2]),
         clampEntry(action.entries[3]),
       ];
-
       const { teamAScore, teamBScore } = calcRound(clampedEntries);
-
-      const newRound = {
+      const newRound: Round = {
         id: state.rounds.length + 1,
         entries: clampedEntries,
         teamAScore,
         teamBScore,
       };
-
       const newRounds = [...state.rounds, newRound];
-      const totals = runningTotals(newRounds);
-      const { scoreLimit } = state;
-
-      const aCanWin = canWin(totals.a, scoreLimit, newRounds, [0, 1]);
-      const bCanWin = canWin(totals.b, scoreLimit, newRounds, [2, 3]);
-
-      let winner: "A" | "B" | null = null;
-
-      if (aCanWin && bCanWin) {
-        winner = totals.a >= totals.b ? "A" : "B";
-      } else if (aCanWin) {
-        winner = "A";
-      } else if (bCanWin) {
-        winner = "B";
-      }
-
-      return {
-        ...state,
-        rounds: newRounds,
-        phase: winner !== null ? "finished" : "playing",
-        winner,
-      };
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
     }
 
     case "UNDO_ROUND": {
       if (state.rounds.length === 0) return state;
       const newRounds = state.rounds.slice(0, -1);
-      const totals = runningTotals(newRounds);
-      const aCanWin = canWin(totals.a, state.scoreLimit, newRounds, [0, 1]);
-      const bCanWin = canWin(totals.b, state.scoreLimit, newRounds, [2, 3]);
-      let winner: "A" | "B" | null = null;
-      if (aCanWin && bCanWin) {
-        winner = totals.a >= totals.b ? "A" : "B";
-      } else if (aCanWin) {
-        winner = "A";
-      } else if (bCanWin) {
-        winner = "B";
-      }
-      return {
-        ...state,
-        rounds: newRounds,
-        winner,
-        phase: winner !== null ? "finished" : "playing",
-      };
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
     }
 
-    case "NEW_GAME": {
+    case "EDIT_ROUND": {
+      const idx = state.rounds.findIndex((r) => r.id === action.roundId);
+      if (idx === -1) return state;
+      const clampedEntries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry] = [
+        clampEntry(action.entries[0]),
+        clampEntry(action.entries[1]),
+        clampEntry(action.entries[2]),
+        clampEntry(action.entries[3]),
+      ];
+      const { teamAScore, teamBScore } = calcRound(clampedEntries);
+      const existingComment = state.rounds[idx].comment;
+      const updatedRound: Round = {
+        ...state.rounds[idx],
+        entries: clampedEntries,
+        teamAScore,
+        teamBScore,
+        comment: "comment" in action
+          ? (action.comment?.trim().slice(0, 200) || undefined)
+          : existingComment,
+      };
+      const newRounds = [
+        ...state.rounds.slice(0, idx),
+        updatedRound,
+        ...state.rounds.slice(idx + 1),
+      ];
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
+    }
+
+    case "NEW_GAME":
       return { ...initialState };
-    }
 
-    case "KEEP_PLAYING": {
-      return {
-        ...state,
-        phase: "playing",
-        winner: null,
-      };
-    }
+    case "KEEP_PLAYING":
+      return { ...state, phase: "playing", winner: null };
+
+    case "LOAD_STATE":
+      return action.state;
 
     default: {
-      // Exhaustiveness check — action is `never` here if all cases are handled.
       const _exhaustive: never = action;
       return _exhaustive;
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-// localStorage + URL helpers
-// ---------------------------------------------------------------------------
-
 const STORAGE_KEY = "400-scorekeeper-state";
 
-function isValidState(parsed: unknown): parsed is GameState {
+export function isValidState(parsed: unknown): parsed is GameState {
   return (
     typeof parsed === "object" &&
     parsed !== null &&
     "phase" in parsed &&
     "players" in parsed &&
-    "rounds" in parsed
+    "rounds" in parsed &&
+    Array.isArray((parsed as GameState).players) &&
+    Array.isArray((parsed as GameState).rounds)
   );
-}
-
-function loadFromUrl(): GameState | null {
-  try {
-    const hash = window.location.hash;
-    const match = hash.match(/[#&]state=([^&]*)/);
-    if (!match) return null;
-    const decoded = JSON.parse(atob(decodeURIComponent(match[1])));
-    if (isValidState(decoded)) {
-      // Clear the hash so it doesn't persist or re-hydrate on refresh.
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-      return decoded;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 export function stateToShareUrl(state: GameState): string {
@@ -198,22 +165,30 @@ export function stateToShareUrl(state: GameState): string {
 }
 
 function loadState(): GameState {
-  const fromUrl = loadFromUrl();
-  if (fromUrl !== null) return fromUrl;
+  try {
+    const hash = window.location.hash;
+    const match = hash.match(/[#?&]state=([^&]*)/);
+    if (match) {
+      const decoded: unknown = JSON.parse(atob(decodeURIComponent(match[1])));
+      if (isValidState(decoded)) {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        return decoded;
+      }
+    }
+  } catch {
+    // fall through
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return initialState;
-    const parsed: unknown = JSON.parse(raw);
-    if (isValidState(parsed)) return parsed;
-    return initialState;
+    if (raw !== null) {
+      const parsed: unknown = JSON.parse(raw);
+      if (isValidState(parsed)) return parsed;
+    }
   } catch {
-    return initialState;
+    // fall through
   }
+  return initialState;
 }
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
 
 export function useGameState(): { state: GameState; dispatch: React.Dispatch<GameAction> } {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadState);
@@ -222,7 +197,7 @@ export function useGameState(): { state: GameState; dispatch: React.Dispatch<Gam
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      // Silently ignore write errors (e.g. private browsing quota exceeded).
+      // Silently ignore write errors
     }
   }, [state]);
 

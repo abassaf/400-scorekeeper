@@ -8,8 +8,9 @@ export interface PlayerEntry {
 export interface Round {
   id: number;
   entries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry];
-  teamAScore: number;  // adjusted score this round
+  teamAScore: number;
   teamBScore: number;
+  comment?: string;
 }
 
 export interface GameState {
