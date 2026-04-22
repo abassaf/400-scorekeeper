@@ -63,9 +63,8 @@ export function useGameHistory(): {
       rounds: state.rounds,
       winner: state.winner,
     };
-    const next = [entry, ...history];
-    persist(next);
-    setHistory(next);
+    persist([entry, ...history]);
+    setHistory((prev) => [entry, ...prev]);
     return entry.id;
   }
 

@@ -31,12 +31,14 @@ export default function App() {
 
   useEffect(() => {
     if (state.phase === 'finished') {
-      if (!wasSavedRef.current) {
+      if (savedIdRef.current) {
+        // Already saved (auto or manual) — just update
+        updateGame(savedIdRef.current, state);
+      } else if (!wasSavedRef.current) {
+        // First time reaching finished and not yet saved
         wasSavedRef.current = true;
         const id = saveGame(state);
         if (id) savedIdRef.current = id;
-      } else if (savedIdRef.current) {
-        updateGame(savedIdRef.current, state);
       }
     }
     if (state.phase !== 'finished') {
