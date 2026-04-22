@@ -13,7 +13,7 @@ export function PlayerStats({ state }: PlayerStatsProps) {
 
   function makeRateColor(rate: number): string {
     if (rate >= 0.7) return 'var(--sp-positive)';
-    if (rate >= 0.5) return '#facc15';
+    if (rate >= 0.5) return 'var(--sp-text-primary)';
     return 'var(--sp-danger)';
   }
 

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { darkColors, lightColors, type ThemeColors } from '../theme';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -21,7 +21,6 @@ function isThemeMode(v: string | null): v is ThemeMode {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>('system');
-  const isLoadedRef = useRef(false);
 
   const getSystemMode = (): 'light' | 'dark' =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -31,7 +30,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(THEME_KEY);
     if (isThemeMode(stored)) setModeState(stored);
-    isLoadedRef.current = true;
   }, []);
 
   useEffect(() => {
