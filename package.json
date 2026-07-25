@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scoring:pull": "git subtree pull --prefix src/shared shared main"
   },
   "dependencies": {
     "html-to-image": "^1.11.13",
