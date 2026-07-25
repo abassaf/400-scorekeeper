@@ -37,12 +37,13 @@ export function ScoreHeader({ state, onNewGame, onExport, exporting, onSave, sav
     document.body.removeChild(ta);
   }
 
+  const harshDoubles = state.harshDoubles ?? false;
   const aBlocked =
     totals.a >= scoreLimit &&
-    ([0, 1] as const).some((i) => playerCumulativeScore(rounds, i) < 0);
+    ([0, 1] as const).some((i) => playerCumulativeScore(rounds, i, harshDoubles) < 0);
   const bBlocked =
     totals.b >= scoreLimit &&
-    ([2, 3] as const).some((i) => playerCumulativeScore(rounds, i) < 0);
+    ([2, 3] as const).some((i) => playerCumulativeScore(rounds, i, harshDoubles) < 0);
 
   const roundDisplay =
     phase === "playing"

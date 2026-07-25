@@ -3,7 +3,7 @@ import type { GameState, PlayerEntry, PlayerIndex, Round } from "../types";
 import { calcRound, runningTotals, playerScore } from "../scoring";
 
 export type GameAction =
-  | { type: "START_GAME"; players: [string, string, string, string]; scoreLimit: number }
+  | { type: "START_GAME"; players: [string, string, string, string]; scoreLimit: number; harshDoubles: boolean }
   | { type: "ADD_ROUND"; entries: [PlayerEntry, PlayerEntry, PlayerEntry, PlayerEntry] }
   | { type: "UNDO_ROUND" }
   | { type: "NEW_GAME" }
@@ -17,6 +17,7 @@ const initialState: GameState = {
   scoreLimit: 80,
   rounds: [],
   winner: null,
+  harshDoubles: false,
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -35,12 +36,13 @@ function canWin(
   scoreLimit: number,
   rounds: { entries: { called: number; obtained: number }[] }[],
   playerIndices: PlayerIndex[],
+  harshDoubles: boolean,
 ): boolean {
   if (total < scoreLimit) return false;
   return playerIndices.every((i) => {
     const cumScore = rounds.reduce((sum, r) => {
       const e = r.entries[i];
-      return sum + playerScore(e.called, e.obtained);
+      return sum + playerScore(e.called, e.obtained, harshDoubles);
     }, 0);
     return cumScore >= 0;
   });
@@ -49,10 +51,11 @@ function canWin(
 function resolveWinner(
   rounds: Round[],
   scoreLimit: number,
+  harshDoubles: boolean,
 ): { winner: "A" | "B" | null; phase: GameState["phase"] } {
   const totals = runningTotals(rounds);
-  const aCanWin = canWin(totals.a, scoreLimit, rounds, [0, 1]);
-  const bCanWin = canWin(totals.b, scoreLimit, rounds, [2, 3]);
+  const aCanWin = canWin(totals.a, scoreLimit, rounds, [0, 1], harshDoubles);
+  const bCanWin = canWin(totals.b, scoreLimit, rounds, [2, 3], harshDoubles);
   let winner: "A" | "B" | null = null;
   if (aCanWin && bCanWin) {
     winner = totals.a >= totals.b ? "A" : "B";
@@ -74,6 +77,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         scoreLimit: clamp(action.scoreLimit, 40, 500),
         rounds: [],
         winner: null,
+        harshDoubles: action.harshDoubles,
       };
     }
 
@@ -84,7 +88,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         clampEntry(action.entries[2]),
         clampEntry(action.entries[3]),
       ];
-      const { teamAScore, teamBScore } = calcRound(clampedEntries);
+      const { teamAScore, teamBScore } = calcRound(clampedEntries, state.harshDoubles ?? false);
       const newRound: Round = {
         id: state.rounds.length + 1,
         entries: clampedEntries,
@@ -92,13 +96,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         teamBScore,
       };
       const newRounds = [...state.rounds, newRound];
-      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit, state.harshDoubles ?? false) };
     }
 
     case "UNDO_ROUND": {
       if (state.rounds.length === 0) return state;
       const newRounds = state.rounds.slice(0, -1);
-      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit, state.harshDoubles ?? false) };
     }
 
     case "EDIT_ROUND": {
@@ -110,7 +114,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         clampEntry(action.entries[2]),
         clampEntry(action.entries[3]),
       ];
-      const { teamAScore, teamBScore } = calcRound(clampedEntries);
+      const { teamAScore, teamBScore } = calcRound(clampedEntries, state.harshDoubles ?? false);
       const existingComment = state.rounds[idx].comment;
       const updatedRound: Round = {
         ...state.rounds[idx],
@@ -126,7 +130,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         updatedRound,
         ...state.rounds.slice(idx + 1),
       ];
-      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit) };
+      return { ...state, rounds: newRounds, ...resolveWinner(newRounds, state.scoreLimit, state.harshDoubles ?? false) };
     }
 
     case "NEW_GAME":

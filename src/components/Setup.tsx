@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 interface SetupProps {
-  onStart: (players: [string, string, string, string], scoreLimit: number) => void;
+  onStart: (players: [string, string, string, string], scoreLimit: number, harshDoubles: boolean) => void;
 }
 
 const DEFAULTS: [string, string, string, string] = [
@@ -15,6 +15,7 @@ export function Setup({ onStart }: SetupProps) {
   const [names, setNames] = useState<[string, string, string, string]>(["", "", "", ""]);
   const [scoreLimitRaw, setScoreLimitRaw] = useState<string>("40");
   const [scoreLimit, setScoreLimit] = useState<number>(40);
+  const [harshDoubles, setHarshDoubles] = useState<boolean>(false);
 
   const scoreLimitInvalid = parseInt(scoreLimitRaw, 10) < 40 || isNaN(parseInt(scoreLimitRaw, 10));
 
@@ -36,7 +37,7 @@ export function Setup({ onStart }: SetupProps) {
     const resolved: [string, string, string, string] = names.map(
       (name, i) => name.trim() || DEFAULTS[i],
     ) as [string, string, string, string];
-    onStart(resolved, scoreLimit);
+    onStart(resolved, scoreLimit, harshDoubles);
   }
 
   const inputClass =
@@ -112,6 +113,24 @@ export function Setup({ onStart }: SetupProps) {
         ) : (
           <p className="text-xs text-zinc-500 mt-1">First team to reach this score wins</p>
         )}
+      </div>
+
+      {/* Harsh Doubles */}
+      <div className="mb-2">
+        <label className="flex items-center justify-between gap-4 cursor-pointer">
+          <span>
+            <span className="block text-sm text-zinc-400">Harsh doubles</span>
+            <span className="block text-xs text-zinc-500 mt-1">
+              A missed bid of 5 or more loses its full value (call 5, miss = −10)
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 shrink-0 rounded border-zinc-700 bg-zinc-800 accent-white"
+            checked={harshDoubles}
+            onChange={(e) => setHarshDoubles(e.target.checked)}
+          />
+        </label>
       </div>
 
       <button

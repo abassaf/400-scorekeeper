@@ -8,6 +8,7 @@ export interface HistoryEntry {
   scoreLimit: number;
   rounds: Round[];
   winner: 'A' | 'B' | null;
+  harshDoubles?: boolean;
 }
 
 const HISTORY_KEY = '400-scorekeeper-history';
@@ -62,6 +63,7 @@ export function useGameHistory(): {
       scoreLimit: state.scoreLimit,
       rounds: state.rounds,
       winner: state.winner,
+      harshDoubles: state.harshDoubles ?? false,
     };
     persist([entry, ...history]);
     setHistory((prev) => [entry, ...prev]);

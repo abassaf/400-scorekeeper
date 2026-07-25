@@ -24,6 +24,7 @@ export function HistoryDetail({ entry, onBack, onLoadIntoGame }: HistoryDetailPr
     scoreLimit: entry.scoreLimit,
     rounds: entry.rounds,
     winner: entry.winner,
+    harshDoubles: entry.harshDoubles ?? false,
   };
 
   return (

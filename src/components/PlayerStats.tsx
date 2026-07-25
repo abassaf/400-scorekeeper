@@ -30,7 +30,7 @@ export function PlayerStats({ state }: PlayerStatsProps) {
           <div key={team.label} className="space-y-3">
             {team.indices.map((idx) => {
               const s = playerStats(rounds, idx);
-              const score = playerCumulativeScore(rounds, idx);
+              const score = playerCumulativeScore(rounds, idx, state.harshDoubles ?? false);
               return (
                 <div
                   key={idx}

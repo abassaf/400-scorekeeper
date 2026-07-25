@@ -134,7 +134,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
           <div className="grid grid-cols-4 gap-2">
             {PLAYER_INDICES.map((i) => {
               const s = stats[i];
-              const score = playerCumulativeScore(rounds, i);
+              const score = playerCumulativeScore(rounds, i, state.harshDoubles ?? false);
               const makeRateColor =
                 s.makeRate >= 0.7 ? "#34d399" : s.makeRate >= 0.5 ? "#facc15" : "#f87171";
               const scoreColor = score >= 0 ? "#34d399" : "#f87171";

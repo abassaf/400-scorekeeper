@@ -82,6 +82,7 @@ export default function App() {
       scoreLimit: entry.scoreLimit,
       rounds: entry.rounds,
       winner: entry.winner,
+      harshDoubles: entry.harshDoubles ?? false,
     }});
     setSelectedEntry(null);
     setView('game');
@@ -162,8 +163,8 @@ export default function App() {
           <div className="flex items-center justify-center py-8">
             <div className="w-full max-w-lg">
               <Setup
-                onStart={(players, scoreLimit) =>
-                  dispatch({ type: "START_GAME", players, scoreLimit })
+                onStart={(players, scoreLimit, harshDoubles) =>
+                  dispatch({ type: "START_GAME", players, scoreLimit, harshDoubles })
                 }
               />
             </div>
