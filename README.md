@@ -54,6 +54,21 @@ pnpm dev
 - [Lucide React](https://lucide.dev) for icons
 - Deployed to GitHub Pages via GitHub Actions
 
+## Shared scoring rules
+
+The scoring logic is not maintained here. It lives in
+**[400-scorekeeper-scoring](https://github.com/abassaf/400-scorekeeper-scoring)** and is
+shared verbatim with the [mobile app](https://github.com/abassaf/400-scorekeeper-mobile),
+mounted at `src/shared/` as a `git subtree` and re-exported through one-line barrels at
+`src/scoring.ts` / `src/types.ts` so no import paths change.
+
+**Do not edit `src/shared/**` here.** The mount is pull-only — edit and push in the shared
+repo, then `pnpm scoring:pull`. There is deliberately no push script, and no `--squash` on
+the mount; the shared repo's README explains why both break.
+
+The scoring tests live in the shared repo but run from the mobile app, which has the Jest
+setup. This repo excludes `src/shared/*.test.ts` from `tsc`.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
